@@ -4,3 +4,6 @@
 4. Open terminal in VS Code and type "uv init"
 5. Provide cmd "uv venv"
 6. Provide cms .venv\Scripts\activate to activate the project
+7. Create requirement.txt and provide list of libaries to import
+8. In Terminal, provide command "uv add -r requirements.txt
+9. Create folder structure as needed using snapshot "Project folder Structure"
