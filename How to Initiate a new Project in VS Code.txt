@@ -3,3 +3,4 @@
 3. Provide Command code . and VS Code will open
 4. Open terminal in VS Code and type "uv init"
 5. Provide cmd "uv venv"
+6. Provide cms .venv\Scripts\activate to activate the project
