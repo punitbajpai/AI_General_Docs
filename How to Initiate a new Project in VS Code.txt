@@ -1,0 +1,5 @@
+1. Create a Folder under C:\ <Folder name as needed>
+2. Open the folder in Win Explorer and type cmd on path bar
+3. Provide Command code . and VS Code will open
+4. Open terminal in VS Code and type "uv init"
+5. Provide cmd "uv venv"
