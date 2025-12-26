@@ -1,0 +1,105 @@
+1. Create rag_pipeline.py under src\pipelines
+  from chromadb import Client
+  from chromadb.config import Settings
+  from langchain_groq import ChatGroq
+  from dotenv import load_dotenv
+  load_dotenv()
+  
+  # ---- Load Chroma ONCE ----
+  chroma_client = Client(
+      Settings(
+          persist_directory="../notebook/data/vector_store",  #Replace this with path of Vector DB created by your Model
+          anonymized_telemetry=False
+      )
+  )
+  
+  collection = chroma_client.get_or_create_collection(
+      name="internal_knowledge"
+  )
+  
+  # ---- Load LLM ONCE ----
+  llm = ChatGroq(
+      model="llama-3.1-8b-instant",
+      temperature=0,
+      max_tokens=512
+  )
+  
+  # ---- RAG Query Function ----
+  def query_rag(question: str, top_k: int = 4):
+      results = collection.query(
+          query_texts=[question],
+          n_results=top_k
+      )
+  
+      docs = results["documents"][0]
+      context = "\n\n".join(docs)
+  
+      prompt = f"""
+  You are an internal knowledge assistant.
+  Answer ONLY using the context below.
+  If the answer is not found, say so clearly.
+  
+  Context:
+  {context}
+  
+  Question:
+  {question}
+  """
+  
+      response = llm.invoke(prompt)
+  
+      return {
+          "answer": response.content,
+          "sources": results["metadatas"][0]
+      }
+
+2, Create app.py under same folder with following code (Add fastapi,pydanic in requirements.txt):
+  from fastapi import FastAPI
+  from pydantic import BaseModel
+  from rag_pipeline import query_rag
+  
+  app = FastAPI(title="Internal RAG API")
+  
+  class QueryRequest(BaseModel):
+      question: str
+  
+  @app.post("/query")
+  def query(req: QueryRequest):
+      result = query_rag(req.question)
+      return result
+
+3, Run locally using folowing from terminal and use another port number if need be and using CTRL+ C to stop the service
+    uvicorn app:app --host 0.0.0.0 --port 8000
+
+4. Test it using below URL
+   http://localhost:8000/docs
+   http://localhost:8000/query
+
+5. Create UI by creating app.py under src\ui folder (Add Streamlit in requirements.txt)
+  import streamlit as st
+  import requests
+  
+  st.title("Internal Knowledge Assistant")
+  
+  question = st.text_input("Ask a question")
+  
+  if st.button("Ask"):
+      resp = requests.post(
+          "http://your-api-url/query",
+          json={"question": question}
+      )
+      st.write(resp.json()["answer"])
+
+6. Invoke the UI on browser using following command and it can be stopped using CTRL+C
+   streamlit run src/ui app.py
+
+7. Test is using following URL
+   Local URL: http://localhost:8501
+   Network URL: http://192.168.1.10<replace ip with your ip>:8501 <another port can be used>
+
+8. Multiple users showuld be on same WIFI Network or same VPN
+
+9. Open the port 8501 from Windows Defender 
+ -- Opeen Windoes defender firewall
+ -- Go to advance settings -> Inbound Rules and create new Rule
+ -- Restart the FASTAPI and Strealit and users should be able to access it
